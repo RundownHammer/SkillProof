@@ -1,0 +1,25 @@
+{
+  "name": "@credential/config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./tsconfig.base.json": "./tsconfig.base.json",
+    "./eslint": "./eslint.config.js"
+  },
+  "scripts": {
+    "build": "echo 'config: no build step'",
+    "dev": "echo 'config: no dev step'",
+    "lint": "echo 'config: no lint step'",
+    "typecheck": "echo 'config: no typecheck step'",
+    "test": "echo 'config: no test step'",
+    "clean": "echo 'config: no clean step'"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.28.0",
+    "eslint": "^9.28.0",
+    "globals": "^16.2.0",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.34.0"
+  }
+}
