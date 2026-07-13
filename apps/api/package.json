@@ -13,13 +13,17 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@clerk/express": "^2.1.40",
     "@credential/database": "workspace:*",
     "@credential/shared": "workspace:*",
+    "cors": "^2.8.6",
     "dotenv": "^16.5.0",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@credential/config": "workspace:*",
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.2",
     "@types/node": "^22.15.29",
     "eslint": "^9.28.0",

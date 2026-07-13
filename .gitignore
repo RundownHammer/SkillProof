@@ -11,3 +11,6 @@ packages/database/src/generated
 packages/contracts/artifacts
 packages/contracts/cache
 packages/contracts/typechain-types
+.claude/settings.json
+.claude/
+*.tsbuildinfo

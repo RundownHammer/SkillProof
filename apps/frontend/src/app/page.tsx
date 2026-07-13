@@ -1,20 +1,61 @@
-import type { Metadata } from "next";
-import { canonicalCertificateExample } from "@credential/shared";
+"use client";
 
-export const metadata: Metadata = {
-  title: "SkillProof",
-  description: "Blockchain-based skill credentialing system",
-};
+import {
+  SignedIn,
+  SignedOut,
+  SignInButton,
+  SignUpButton,
+  UserButton,
+  useAuth,
+} from "@clerk/nextjs";
+import { useState } from "react";
 
-export default function HomePage() {
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+
+const TEST_ROUTES = [
+  "any-authenticated",
+  "super-admin",
+  "ncvet-admin",
+  "institute-admin",
+  "student",
+  "employer",
+  "verifier",
+];
+
+export default function Home() {
+  const { getToken } = useAuth();
+  const [result, setResult] = useState("");
+
+  async function callRoute(path: string) {
+    const token = await getToken();
+    const res = await fetch(`${API_URL}/test/${path}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const body = await res.json();
+    setResult(`${res.status} — ${JSON.stringify(body)}`);
+  }
+
   return (
-    <main style={{ fontFamily: "system-ui, sans-serif", padding: "2rem" }}>
-      <h1>SkillProof</h1>
-      <p>Blockchain-based skill credentialing system (Phase 0 scaffold).</p>
-      <p>
-        Shared package link verified — sample certificate ID:{" "}
-        <code>{canonicalCertificateExample.certificateId}</code>
-      </p>
+    <main style={{ padding: "2rem", fontFamily: "sans-serif" }}>
+      <h1>Skill Credentialing System</h1>
+
+      <SignedOut>
+        <SignInButton mode="modal" />
+        <SignUpButton mode="modal" />
+      </SignedOut>
+
+      <SignedIn>
+        <UserButton />
+        <h2>Test protected routes</h2>
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+          {TEST_ROUTES.map((path) => (
+            <button key={path} onClick={() => callRoute(path)}>
+              {path}
+            </button>
+          ))}
+        </div>
+        <pre>{result}</pre>
+      </SignedIn>
     </main>
   );
 }

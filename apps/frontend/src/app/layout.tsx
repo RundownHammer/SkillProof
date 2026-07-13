@@ -1,9 +1,19 @@
-import type { ReactNode } from "react";
+import type { Metadata } from "next";
+import { ClerkProvider } from "@clerk/nextjs";
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export const metadata: Metadata = {
+  title: "Skill Credentialing System",
+  description: "SIH Problem Statement 25200",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body>{children}</body>
-    </html>
+    <ClerkProvider>
+      <html lang="en">
+        <body>{children}</body>
+      </html>
+    </ClerkProvider>
   );
 }

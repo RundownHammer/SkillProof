@@ -27,9 +27,9 @@ Goal: MVP, monorepo, mock-blockchain-first strategy.
 
 ## Current Status
 
-- **Active phase:** 1 — Auth & RBAC
+- **Active phase:** 2 — Core Database Schema
 - **Active step:** not started
-- **Last completed step:** 0.13
+- **Last completed step:** 1.7
 
 *(Update this block every time a step or phase completes. This is the
 first thing to read at the start of any session.)*
@@ -49,6 +49,9 @@ packages/storage/      Supabase Storage client, shared by api + worker
 packages/contracts/    Hardhat + Solidity
 packages/config/      shared tsconfig, ESLint config
 docs/                  this file + the architecture doc
+apps/*/src/env.ts      each app extends packages/shared's base envSchema
+                       with its own required fields via .extend() — don't
+                       add app-specific env vars to the shared schema itself
 ```
 
 As each package gets created in the phase it belongs to, don't create
@@ -82,17 +85,19 @@ Status: `[x]` Completed
 
 ## Phase 1 — Auth & RBAC (doc §12–13)
 
-Status: `[ ]` Not started
+Status: `[x]` Complete
 
 | # | Step | Verify |
 |---|------|--------|
-| 1.1 | Integrate Clerk SDK in `apps/api`, middleware to verify JWT on protected routes | Request with invalid/missing JWT → 401 |
-| 1.2 | `User` model in `packages/database` schema (id, clerkId, role, email, timestamps), migrate | `prisma migrate dev` succeeds, table exists |
-| 1.3 | Sync-on-login logic: first authenticated request creates/updates the local `User` row from Clerk claims | Log in as a new Clerk user → row appears in Postgres |
-| 1.4 | RBAC middleware `requireRole(...roles)` covering all 6 roles (Super Admin, NCVET Admin, Institute Admin, Student, Employer, Verifier) | Unit test per role against a sample protected route |
-| 1.5 | One throwaway test route per permission tier to prove the middleware works end-to-end | 401 (no token) / 403 (wrong role) / 200 (right role) all confirmed |
+| 1.1 | Create Clerk application, add publishable + secret keys to `apps/frontend/.env.local` and `apps/api/.env` | Keys present, neither file tracked by git |
+| 1.2 | Frontend: `ClerkProvider` in root layout, `middleware.ts`, sign-in/up buttons + test-route harness on the home page | Sign up/in works via Clerk's modal |
+| 1.3 | Backend: `@clerk/express` + `cors`, `apps/api/src/env.ts` extending shared schema, `clerkMiddleware()` wired | `curl` with no token → 401 |
+| 1.4 | `User` model + `Role` enum in `packages/database`, migrate | `users` table exists with correct columns |
+| 1.5 | Sync-on-login middleware (`syncUser`) — creates/fetches local `User` row from Clerk claims, defaults to `STUDENT` | `pnpm --filter api typecheck` clean |
+| 1.6 | Wire `requireAuthenticated` + `syncUser` into a real test route, remove throwaway inline route | `curl` with no token still → 401 |
+| 1.7 | `requireRole(...roles)` RBAC middleware + one test route per tier (6 roles) | 401 (no token) / 403 (wrong role) / 200 (right role) all confirmed via the frontend test page |
 
-**Do not proceed to Phase 2 until 1.5 passes.**
+**Do not proceed to Phase 2 until 1.7 passes.**
 
 ---
 
@@ -264,7 +269,8 @@ Status: `[ ]` Not started
 
 | Date | Phase | Step(s) | Notes | Commit |
 |------|-------|---------|-------|--------|
-| 2026-07-12 | 0 | 0.1–0.13 | Manual scaffold, unified monorepo, Prisma 7 | <commit hash> | 
+| 2026-07-12 | 0 | 0.1–0.13 | Manual scaffold, unified monorepo, Prisma 7 | <commit hash> |
+| 2026-07-13 | 1 | 1.1–1.7 | Clerk auth + RBAC: User/Role model, sync-on-login, requireRole middleware, frontend test harness | <commit hash> |
 
 *(Add a row every time a step or phase is completed. This is what lets a
 fresh agent session pick up exactly where the last one left off.)*

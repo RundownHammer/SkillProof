@@ -1,28 +1,27 @@
 import "dotenv/config";
 import express from "express";
+import cors from "cors";
+import { clerkMiddleware } from "@clerk/express";
 import { prisma } from "@credential/database";
-import { canonicalCertificateExample } from "@credential/shared";
+import { env } from "./env.js";
+import testRouter from "./routes/test.js";
 
 const app = express();
-const port = Number(process.env.PORT ?? 3001);
 
-app.get("/health", async (_req, res) => {
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    res.status(200).json({
-      status: "ok",
-      database: "connected",
-      sampleCertificateId: canonicalCertificateExample.certificateId,
-    });
-  } catch {
-    res.status(200).json({
-      status: "ok",
-      database: "unavailable",
-      sampleCertificateId: canonicalCertificateExample.certificateId,
-    });
-  }
+app.use(cors({ origin: env.FRONTEND_URL }));
+app.use(express.json());
+app.use(clerkMiddleware());
+
+app.get("/health", (_req, res) => {
+  res.status(200).json({
+    status: "ok",
+    service: "api",
+    prismaClientLoaded: typeof prisma === "object",
+  });
 });
 
-app.listen(port, () => {
-  console.log(`API listening on http://localhost:${port}`);
+app.use("/test", testRouter);
+
+app.listen(env.PORT, () => {
+  console.log(`api listening on port ${env.PORT}`);
 });

@@ -14,16 +14,11 @@ for the full architecture rationale.
 ## Status
 
 ### Backend 
-**Phase 0 — Project Scaffolding: ✅ Complete**
+**Phase 0 — Project Scaffolding ✅ Complete**
 
-The monorepo is fully wired: frontend, API, worker, and shared packages
-build, lint, typecheck, and talk to each other and to Postgres/Redis
-locally. Full phase-by-phase plan and progress log lives in
-[`docs/PLAN.md`](docs/PLAN.md) — check the **Current Status** block at
-the top of that file for exactly where things stand before starting new
-work.
+**Phase 1 — Auth & RBAC: ✅ Complete**
 
-Next up: **Phase 1 — Auth & RBAC.**
+Next up: **Phase 2 — Core Database Schema.**
 
 ### Frontend 
 Haven't started yet :)
@@ -66,6 +61,12 @@ docker-compose.yml   local Postgres 16 + Redis 7
 Internal packages are scoped as `@credential/*` (e.g. `@credential/shared`)
 and linked via `workspace:*` — not published anywhere, just a local
 namespace so imports read cleanly across packages.
+
+## Conventions
+
+- **App env files:** each `apps/*/src/env.ts` extends `@credential/shared`'s
+  base `envSchema` with its own required fields via `.extend()` — app-specific
+  env vars belong in the app's env file, never the shared schema.
 
 ---
 
