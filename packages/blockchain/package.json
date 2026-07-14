@@ -1,29 +1,26 @@
 {
-  "name": "worker",
+  "name": "@credential/blockchain",
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "scripts": {
     "build": "tsc",
-    "dev": "tsx watch src/index.ts",
-    "start": "node dist/index.js",
+    "dev": "echo 'blockchain: no dev step'",
     "lint": "eslint src --max-warnings 0",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "clean": "rm -rf dist"
   },
-  "dependencies": {
-    "@credential/blockchain": "workspace:*",
-    "@credential/database": "workspace:*",
-    "@credential/queue": "workspace:*",
-    "bullmq": "^5.53.2",
-    "dotenv": "^16.5.0"
-  },
   "devDependencies": {
     "@credential/config": "workspace:*",
     "@types/node": "^22.15.29",
     "eslint": "^9.28.0",
-    "tsx": "^4.19.4",
     "typescript": "^5.8.3",
     "vitest": "^4.1.10"
   }

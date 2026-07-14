@@ -1,26 +1,22 @@
 import "dotenv/config";
-import { Queue, Worker } from "bullmq";
+import { createCertificateIssuanceWorker } from "@credential/queue";
+import { processIssuance } from "./processor.js";
 
 const redisUrl = process.env.REDIS_URL ?? "redis://localhost:6379";
+const connection = { url: redisUrl, maxRetriesPerRequest: null };
 
-const connection = {
-  url: redisUrl,
-  maxRetriesPerRequest: null,
-};
-
-const PLACEHOLDER_QUEUE = "placeholder";
-
-const queue = new Queue(PLACEHOLDER_QUEUE, { connection });
-const worker = new Worker(
-  PLACEHOLDER_QUEUE,
-  async (job) => {
-    console.log(`placeholder job received: ${job.id}`);
-  },
-  { connection },
-);
+const worker = createCertificateIssuanceWorker(processIssuance, connection);
 
 worker.on("ready", () => {
   console.log("worker ready");
+});
+
+worker.on("completed", (job) => {
+  console.log(`[issuance] job ${job.id} completed`);
+});
+
+worker.on("failed", (job, err) => {
+  console.error(`[issuance] job ${job?.id} failed:`, err);
 });
 
 worker.on("error", (error) => {
@@ -28,7 +24,6 @@ worker.on("error", (error) => {
 });
 
 async function bootstrap(): Promise<void> {
-  await queue.waitUntilReady();
   await worker.waitUntilReady();
   console.log(`connected to Redis at ${redisUrl}`);
 }
