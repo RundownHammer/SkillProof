@@ -1,38 +1,26 @@
 "use client";
 
-import {
-  SignedIn,
-  SignedOut,
-  SignInButton,
-  SignUpButton,
-  UserButton,
-  useAuth,
-} from "@clerk/nextjs";
+import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton, useAuth } from "@clerk/nextjs";
 import { useState } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
-const TEST_ROUTES = [
-  "any-authenticated",
-  "super-admin",
-  "ncvet-admin",
-  "institute-admin",
-  "student",
-  "employer",
-  "verifier",
-];
-
 export default function Home() {
   const { getToken } = useAuth();
+  const [method, setMethod] = useState("GET");
+  const [path, setPath] = useState("/institutes?page=1&limit=10");
+  const [body, setBody] = useState("");
   const [result, setResult] = useState("");
 
-  async function callRoute(path: string) {
+  async function callApi() {
     const token = await getToken();
-    const res = await fetch(`${API_URL}/test/${path}`, {
-      headers: { Authorization: `Bearer ${token}` },
+    const res = await fetch(`${API_URL}${path}`, {
+      method,
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: method === "GET" || method === "DELETE" ? undefined : body,
     });
-    const body = await res.json();
-    setResult(`${res.status} — ${JSON.stringify(body)}`);
+    const text = await res.text();
+    setResult(`${res.status}\n${text}`);
   }
 
   return (
@@ -46,14 +34,23 @@ export default function Home() {
 
       <SignedIn>
         <UserButton />
-        <h2>Test protected routes</h2>
-        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-          {TEST_ROUTES.map((path) => (
-            <button key={path} onClick={() => callRoute(path)}>
-              {path}
-            </button>
-          ))}
+        <h2>API tester</h2>
+        <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
+          <select value={method} onChange={(e) => setMethod(e.target.value)}>
+            <option>GET</option>
+            <option>POST</option>
+            <option>PATCH</option>
+            <option>DELETE</option>
+          </select>
+          <input style={{ flex: 1 }} value={path} onChange={(e) => setPath(e.target.value)} placeholder="/institutes" />
         </div>
+        <textarea
+          style={{ width: "100%", height: "80px" }}
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          placeholder='{"name": "Test Institute", "code": "INST-TEST-001"}'
+        />
+        <div><button onClick={callApi}>Send</button></div>
         <pre>{result}</pre>
       </SignedIn>
     </main>

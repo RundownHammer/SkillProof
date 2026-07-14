@@ -27,9 +27,9 @@ Goal: MVP, monorepo, mock-blockchain-first strategy.
 
 ## Current Status
 
-- **Active phase:** 2 — Core Database Schema
+- **Active phase:** 3 — Canonical Certificate + Hashing
 - **Active step:** not started
-- **Last completed step:** 1.7
+- **Last completed step:** 2.8
 
 *(Update this block every time a step or phase completes. This is the
 first thing to read at the start of any session.)*
@@ -46,6 +46,16 @@ packages/shared/      Zod schemas, canonical JSON types, constants
 packages/queue/        BullMQ queue + job-type definitions, shared by api + worker
 packages/blockchain/  BlockchainAdapter interface, MockAdapter, RealAdapter
 packages/storage/      Supabase Storage client, shared by api + worker
+apps/api/src/utils/async-handler.ts   wrap every async route handler in
+                                       this — reject-safety regardless of
+                                       Express major version. Use for
+                                       every new route from Phase 2 on.
+apps/api/src/middleware/ownership.ts  requireOwnInstitute() — built for
+                                       Institutes/Students but designed
+                                       to be reused for Certificate
+                                       routes in Phase 3 (Institute Admin
+                                       should only issue certs for their
+                                       own institute, same pattern).
 packages/contracts/    Hardhat + Solidity
 packages/config/      shared tsconfig, ESLint config
 docs/                  this file + the architecture doc
@@ -103,14 +113,20 @@ Status: `[x]` Complete
 
 ## Phase 2 — Core Database Schema
 
-Status: `[ ]` Not started
+Status: `[x]` Complete
 
 | # | Step | Verify |
 |---|------|--------|
-| 2.1 | Model `Institute`, `Student`, `Qualification` in `packages/database`, migrate | Migration applies cleanly, tables exist |
-| 2.2 | Model `Certificate`, `BlockchainTransaction`, `Verification`, `AuditLog` (relations only, no business logic yet) | `prisma validate` passes, relations correct |
-| 2.3 | Seed script: a couple of fake institutes/students/qualifications | `pnpm --filter database seed` populates rows |
-| 2.4 | CRUD service + routes in `apps/api` for Institutes and Students only (no certificates yet) | `POST/GET/PATCH/DELETE` all round-trip correctly via curl/Postman |
+| 2.1 | `Institute`, `Student`, `Qualification` models; `User.instituteId` link added | Schema edits in place, migrated together with 2.2 |
+| 2.2 | `Certificate`, `BlockchainTransaction`, `Verification`, `AuditLog` (relations only); `User.auditLogs` back-relation added | `prisma validate` passes, `\dt` shows all 8 tables |
+| 2.3 | Seed script (2 institutes, 2 qualifications, 3 students), idempotent via `upsert` | `pnpm --filter @credential/database seed` populates rows |
+| 2.4 | Shared Zod schemas: `pagination`, `institute`, `student` in `packages/shared` | `pnpm --filter @credential/shared typecheck` clean |
+| 2.5 | `asyncHandler`, Prisma not-found helper, `requireOwnInstitute` ownership middleware | `pnpm --filter api typecheck` clean |
+| 2.6 | Institute CRUD — reads open to any authenticated user, writes Super/NCVET Admin only (or own-institute PATCH) | Round-trips correctly, 404 on missing id |
+| 2.7 | Student CRUD — reads AND writes restricted to Super Admin/NCVET Admin/Institute Admin, ownership-scoped for Institute Admin | 403 wrong institute, 200 own institute, 404 missing id |
+| 2.8 | Routes wired, global error middleware, frontend tester upgraded to general-purpose | Full E2E flow (401/403/200/404 + pagination) confirmed via frontend |
+
+**Do not proceed to Phase 3 until 2.8 passes.**
 
 **Do not proceed to Phase 3 until 2.4 passes.**
 
@@ -179,6 +195,13 @@ Status: `[ ]` Not started
 ## Phase 7 — Verification Flow (still on mock chain)
 
 Status: `[ ]` Not started
+
+NOTE: /verify/:certificateId must be PUBLIC — no auth required.
+Confirmed with project owner: anyone scanning a certificate's QR code
+needs to see Verified/Tampered/Revoked without logging in. This is a
+deliberate, single exception to the "everything requires auth" pattern
+established in Phases 1–2 — don't accidentally wrap it in
+requireAuthenticated when building Phase 7.
 
 | # | Step | Verify |
 |---|------|--------|
@@ -271,6 +294,7 @@ Status: `[ ]` Not started
 |------|-------|---------|-------|--------|
 | 2026-07-12 | 0 | 0.1–0.13 | Manual scaffold, unified monorepo, Prisma 7 | <commit hash> |
 | 2026-07-13 | 1 | 1.1–1.7 | Clerk auth + RBAC: User/Role model, sync-on-login, requireRole middleware, frontend test harness | <commit hash> |
+| 2026-07-14 | 2 | 2.1–2.8 | Core schema (Institute/Student/Qualification/Certificate/BlockchainTx/Verification/AuditLog), ownership-scoped Institute+Student CRUD, shared Zod schemas, seed; full E2E (401/403/200/404 + pagination) verified via automated Clerk-token flow | <commit hash> |
 
 *(Add a row every time a step or phase is completed. This is what lets a
 fresh agent session pick up exactly where the last one left off.)*
