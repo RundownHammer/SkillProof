@@ -205,6 +205,27 @@ computed at *issuance time* by `POST /certificates` (API) and stored on the
 recompute it. This keeps a single source of truth for the hash used by
 verification (Phase 7).
 
+**Implementation note (Phases 4–5):** after `POST /certificates` creates the
+`QUEUED` row, it enqueues one BullMQ job on the `certificate-issuance` queue.
+The job payload is **`{ certificateId }` where `certificateId` is the
+`Certificate` row's Prisma `id` (a cuid)** — NOT the human-readable
+`CERT-2026-XXXX` string. The worker re-fetches the row from Postgres by that
+id; the payload is never treated as authoritative. The worker walks the
+status state machine (`QUEUED → VALIDATING → HASHING → BLOCKCHAIN_PENDING →
+GENERATING_PDF → UPLOADING → COMPLETED`), advancing status in Postgres at each
+stage. The `HASHING` stage only *confirms* the precomputed hash is present — it
+does not recompute it. Stages are idempotent (status is checked before each
+transition; the `BlockchainTransaction.certificateId` `@unique` constraint
+guards against duplicate tx rows on retry). `GENERATING_PDF` and `UPLOADING`
+are stubbed through Phase 5 (real PDF/Supabase land in Phase 6).
+
+The `BLOCKCHAIN_PENDING` stage calls a `BlockchainAdapter`. Phase 5 ships only
+`MockBlockchainAdapter` (returns a realistic `0x` + 64-hex transaction hash,
+kept in an in-memory map); a `getBlockchainAdapter()` factory is the single
+seam for Phase 8 to return the real Polygon adapter behind `BLOCKCHAIN_MODE`.
+The worker writes a `BlockchainTransaction` row linked to the certificate
+(`transactionHash`, `status = CONFIRMED`, `network = "mock"`).
+
 ------------------------------------------------------------------------
 
 # 6. Bulk Issuance
@@ -257,6 +278,13 @@ Blockchain returns
 Store transaction hash inside PostgreSQL.
 
 No PDF is ever stored on-chain.
+
+**Implementation note (Phase 5):** the worker currently calls
+`MockBlockchainAdapter` only — it returns a fake `0x…` transaction hash and
+stores it on the `BlockchainTransaction` row. The real Polygon contract call
+is deferred to Phase 8; adapter selection is centralized in
+`getBlockchainAdapter()` so the swap is a one-line change there, not in the
+worker.
 
 ------------------------------------------------------------------------
 
@@ -375,6 +403,14 @@ Example statuses:
 -   uploading
 -   completed
 -   failed
+
+**Implementation note (Phase 4):** the `certificate-issuance` queue and its
+job payload type (`{ certificateId }`, where `certificateId` is the
+`Certificate` row's Prisma `id`/cuid) live in the shared `@credential/queue`
+package so the API (producer) and worker (consumer) stay in sync. The worker
+consumes each job and advances the row through the statuses above; the
+`hashing` stage confirms the issuance-time hash rather than recomputing it, and
+`generating_pdf`/`uploading` are stubbed until Phase 6.
 
 ------------------------------------------------------------------------
 

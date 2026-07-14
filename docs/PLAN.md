@@ -27,9 +27,9 @@ Goal: MVP, monorepo, mock-blockchain-first strategy.
 
 ## Current Status
 
-- **Active phase:** 4 — Queue Wiring
+- **Active phase:** 6 — PDF + Storage
 - **Active step:** not started
-- **Last completed step:** 3.4
+- **Last completed step:** 5.4
 
 *(Update this block every time a step or phase completes. This is the
 first thing to read at the start of any session.)*
@@ -160,7 +160,7 @@ blockchain call (those are Phases 4–5).
 
 ## Phase 4 — Queue Wiring
 
-Status: `[ ]` Not started
+Status: `[x]` Complete
 
 | # | Step | Verify |
 |---|------|--------|
@@ -175,7 +175,7 @@ Status: `[ ]` Not started
 
 ## Phase 5 — Blockchain Module (mock first)
 
-Status: `[ ]` Not started
+Status: `[x]` Complete
 
 | # | Step | Verify |
 |---|------|--------|
@@ -307,6 +307,8 @@ Status: `[ ]` Not started
 | 2026-07-13 | 1 | 1.1–1.7 | Clerk auth + RBAC: User/Role model, sync-on-login, requireRole middleware, frontend test harness | <commit hash> |
 | 2026-07-14 | 2 | 2.1–2.8 | Core schema (Institute/Student/Qualification/Certificate/BlockchainTx/Verification/AuditLog), ownership-scoped Institute+Student CRUD, shared Zod schemas, seed; full E2E (401/403/200/404 + pagination) verified via automated Clerk-token flow | <commit hash> |
 | 2026-07-14 | 3 | 3.1–3.4 | Canonical certificate JSON builder + SHA-256 hasher (pure fns in shared), `POST /certificates` creates QUEUED row storing canonicalJson+hash with ownership/role gating; vitest unit tests (12 functional E2E checks) green | <commit hash> |
+| 2026-07-14 | 4 | 4.1–4.4 | New `@credential/queue` package (BullMQ factory, queue `certificate-issuance`, job payload `{ certificateId }` = Certificate Prisma `id`); 4.1 throwaway enqueue→consume smoke test; `POST /certificates` enqueues job after row creation (enqueue failure leaves row QUEUED + logs); worker walks status state machine (QUEUED→…→COMPLETED) idempotently | <pending> |
+| 2026-07-14 | 5 | 5.1–5.4 | New `@credential/blockchain` package: `BlockchainAdapter` interface + `MockBlockchainAdapter` (0x+64-hex, in-memory map) + `getBlockchainAdapter()` seam (mock only; `BLOCKCHAIN_MODE` switch deferred to Phase 8); worker `blockchain_pending` stage calls adapter and writes `BlockchainTransaction` row (CONFIRMED, network `mock`); automated E2E proves full flow → `completed` + tx row | <pending> |
 
 *(Add a row every time a step or phase is completed. This is what lets a
 fresh agent session pick up exactly where the last one left off.)*
