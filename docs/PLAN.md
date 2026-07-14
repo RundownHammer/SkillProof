@@ -27,9 +27,9 @@ Goal: MVP, monorepo, mock-blockchain-first strategy.
 
 ## Current Status
 
-- **Active phase:** 3 — Canonical Certificate + Hashing
+- **Active phase:** 4 — Queue Wiring
 - **Active step:** not started
-- **Last completed step:** 2.8
+- **Last completed step:** 3.4
 
 *(Update this block every time a step or phase completes. This is the
 first thing to read at the start of any session.)*
@@ -134,16 +134,27 @@ Status: `[x]` Complete
 
 ## Phase 3 — Canonical Certificate + Hashing (no blockchain yet)
 
-Status: `[ ]` Not started
+Status: `[x]` Complete
 
 | # | Step | Verify |
 |---|------|--------|
-| 3.1 | Canonical JSON builder in `packages/shared` (doc §4) — pure function | Unit test: same input → same JSON, stable key order |
+| 3.1 | Canonical JSON builder in `packages/shared` (doc §4) — pure function, locked field order | Unit test: same input → same JSON, stable key order |
 | 3.2 | SHA-256 hashing service in `packages/shared` — pure function | Unit test: same JSON → same hash; any field change → different hash |
-| 3.3 | `POST /certificates` in `apps/api` — creates a `Certificate` row, status `queued`, no PDF/blockchain side effects yet | Row appears in Postgres with correct canonical JSON + hash stored |
-| 3.4 | Regression check: hash determinism confirmed via automated test, not just manual check | Test suite passes in CI |
+| 3.3 | `POST /certificates` in `apps/api` — creates a `Certificate` row, status `QUEUED`, no PDF/blockchain side effects yet | Row appears in Postgres with correct canonical JSON + hash stored |
+| 3.4 | Regression check: hash determinism confirmed via automated test, not just manual check | `pnpm --filter @credential/shared test` passes (vitest); full `build/lint/typecheck/test` green |
 
 **Do not proceed to Phase 4 until 3.4 passes.**
+
+Canonical field order (locked, must not change — it is the hash contract):
+`certificateId, studentId, qualificationCode, credits, grade, issueDate, issuerId`.
+Mappings: `studentId` → `Student.id`; `qualificationCode` → `Qualification.code`;
+`issuerId` → `Institute.code` (resolved from `Certificate.instituteId`);
+`issueDate` → `Certificate.issueDate` formatted `YYYY-MM-DD` (UTC). The builder
+(`buildCanonicalCertificate`) and hasher (`hashCanonicalCertificate`) are pure
+functions in `packages/shared` with no DB/blockchain/PDF side effects. `POST
+/certificates` resolves the relations, builds canonical JSON, hashes it, and
+stores `canonicalJson` + `hash` on a `QUEUED` row — no BullMQ job, PDF, or
+blockchain call (those are Phases 4–5).
 
 ---
 
@@ -295,6 +306,7 @@ Status: `[ ]` Not started
 | 2026-07-12 | 0 | 0.1–0.13 | Manual scaffold, unified monorepo, Prisma 7 | <commit hash> |
 | 2026-07-13 | 1 | 1.1–1.7 | Clerk auth + RBAC: User/Role model, sync-on-login, requireRole middleware, frontend test harness | <commit hash> |
 | 2026-07-14 | 2 | 2.1–2.8 | Core schema (Institute/Student/Qualification/Certificate/BlockchainTx/Verification/AuditLog), ownership-scoped Institute+Student CRUD, shared Zod schemas, seed; full E2E (401/403/200/404 + pagination) verified via automated Clerk-token flow | <commit hash> |
+| 2026-07-14 | 3 | 3.1–3.4 | Canonical certificate JSON builder + SHA-256 hasher (pure fns in shared), `POST /certificates` creates QUEUED row storing canonicalJson+hash with ownership/role gating; vitest unit tests (12 functional E2E checks) green | <commit hash> |
 
 *(Add a row every time a step or phase is completed. This is what lets a
 fresh agent session pick up exactly where the last one left off.)*

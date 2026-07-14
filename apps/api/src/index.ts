@@ -7,6 +7,7 @@ import { env } from "./env.js";
 import testRouter from "./routes/test.js";
 import institutesRouter from "./routes/institutes.js";
 import studentsRouter from "./routes/students.js";
+import certificatesRouter from "./routes/certificates.js";
 import type { ErrorRequestHandler } from "express";
 
 const app = express();
@@ -26,6 +27,7 @@ app.get("/health", (_req, res) => {
 app.use("/test", testRouter);
 app.use("/institutes", institutesRouter);
 app.use("/students", studentsRouter);
+app.use("/certificates", certificatesRouter);
 
 const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   console.error(err);

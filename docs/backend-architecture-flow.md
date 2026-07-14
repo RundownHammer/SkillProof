@@ -122,6 +122,22 @@ PDFs are generated FROM this data.
 This allows multiple languages and templates while preserving one
 immutable credential.
 
+    **Field mapping (locked — changing it re-anchors the whole chain):**
+    - `certificateId` → `Certificate.certificateId` (generated at issuance, e.g. `CERT-2026-1A2B3C4D`)
+    - `studentId` → `Student.id` (DB primary key; no separate student code invented)
+    - `qualificationCode` → `Qualification.code` (official NCVET/NSQF code)
+    - `credits` → `Certificate.credits`
+    - `grade` → `Certificate.grade`
+    - `issueDate` → `Certificate.issueDate` formatted `YYYY-MM-DD` (UTC)
+    - `issuerId` → `Institute.code` (resolved from `Certificate.instituteId`)
+
+    The canonical builder (`buildCanonicalCertificate`) and SHA-256 hasher
+    (`hashCanonicalCertificate`) are **pure functions** in `packages/shared`
+    with no DB, blockchain, or PDF side effects. The API resolves relation ids
+    to official codes before calling them. Only this JSON is hashed — never
+    Prisma objects, PDFs, names, titles, logos, signatures, QR codes, or
+    language.
+
 ------------------------------------------------------------------------
 
 # 5. Certificate Issuance Flow
@@ -181,6 +197,13 @@ immutable credential.
 All heavy operations happen asynchronously.
 
 API returns immediately after job creation.
+
+**Implementation note (Phase 3):** canonical JSON and its SHA-256 hash are
+computed at *issuance time* by `POST /certificates` (API) and stored on the
+`Certificate` row (`canonicalJson`, `hash`, `status = QUEUED`). The worker
+(Phases 4–5) later anchors that already-computed hash on Polygon — it does not
+recompute it. This keeps a single source of truth for the hash used by
+verification (Phase 7).
 
 ------------------------------------------------------------------------
 
