@@ -16,12 +16,20 @@ for the full architecture rationale.
 ### Backend 
 **Phase 0 — Project Scaffolding ✅ Complete**
 
-**Phase 1 — Auth & RBAC: ✅ Complete**
+**Phase 1 — Auth & RBAC ✅ Complete**
 
-Next up: **Phase 2 — Core Database Schema.**
+**Phase 2 — Core Database Schema ✅ Complete**
+
+**Phase 3 — Canonical Certificate + Hashing ✅ Complete**
+
+**Phase 4 — Queue Wiring ✅ Complete**
+
+**Phase 5 — Blockchain Module (mock) ✅ Complete**
+
+Next up: **Phase 6 — PDF + Storage.**
 
 ### Frontend 
-Haven't started yet :)
+Scaffolding done (Next.js + Clerk + API test harness). Feature work not started yet :)
 
 ---
 
@@ -51,6 +59,8 @@ packages/
   config/      shared tsconfig + ESLint config
   shared/      Zod schemas, canonical certificate types — frontend-safe
   database/    Prisma schema + client (Prisma 7, driver adapter pattern)
+  queue/       BullMQ queue + job-type definitions (shared by api + worker)
+  blockchain/  BlockchainAdapter interface + Mock adapter (real adapter Phase 8)
   contracts/   Hardhat + Solidity
 docs/
   backend-architecture-flow.md   architecture & design rationale
@@ -119,7 +129,7 @@ pnpm approve-builds
 Run everything:
 ```bash
 pnpm --filter api dev        # http://localhost:4000/health
-pnpm --filter worker dev     # logs "redis connected" then "worker ready"
+pnpm --filter worker dev     # logs "connected to Redis at ..." then "worker ready"
 pnpm --filter frontend dev   # http://localhost:3000
 ```
 
