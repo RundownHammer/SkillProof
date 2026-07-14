@@ -1,6 +1,10 @@
 import { Router } from "express";
 import { prisma } from "@credential/database";
 import {
+  createCertificateIssuanceQueue,
+  CERTIFICATE_ISSUANCE_QUEUE,
+} from "@credential/queue";
+import {
   certificateCreateSchema,
   buildCanonicalCertificate,
   hashCanonicalCertificate,
@@ -9,6 +13,12 @@ import {
 import { requireAuthenticated, syncUser, requireRole } from "../middleware/auth.js";
 import { requireOwnInstitute, studentInstituteFromBody } from "../middleware/ownership.js";
 import { asyncHandler } from "../utils/async-handler.js";
+
+const redisUrl = process.env.REDIS_URL ?? "redis://localhost:6379";
+const issuanceQueue = createCertificateIssuanceQueue({
+  url: redisUrl,
+  maxRetriesPerRequest: null,
+});
 
 const router: ReturnType<typeof Router> = Router();
 
@@ -65,6 +75,21 @@ router.post(
         hash,
       },
     });
+
+    // Phase 4: enqueue a job for the worker to process. The row is already
+    // persisted as QUEUED; if enqueueing fails we keep the row QUEUED and
+    // still return 201 (the worker can be retried out-of-band), rather than
+    // failing the whole request. Enqueue failure is logged loudly below.
+    try {
+      await issuanceQueue.add(CERTIFICATE_ISSUANCE_QUEUE, {
+        certificateId: certificate.id,
+      });
+    } catch (enqueueError) {
+      console.error(
+        `[certificates] FAILED to enqueue issuance job for certificate row ${certificate.id} (certificateId ${certificate.certificateId}). Row left in QUEUED status.`,
+        enqueueError,
+      );
+    }
 
     res.status(201).json(certificate);
   }),

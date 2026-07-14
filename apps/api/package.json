@@ -15,7 +15,9 @@
   "dependencies": {
     "@clerk/express": "^2.1.40",
     "@credential/database": "workspace:*",
+    "@credential/queue": "workspace:*",
     "@credential/shared": "workspace:*",
+    "bullmq": "^5.53.2",
     "cors": "^2.8.6",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
